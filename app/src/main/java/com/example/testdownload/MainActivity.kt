@@ -3,6 +3,7 @@ package com.example.testdownload
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.text.isDigitsOnly
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -50,6 +51,8 @@ class MainActivity : AppCompatActivity() {
 
             } else if (path.startsWith("https://www.facebook.com/")) {
                 id = pattern.findAll(path).last().value
+            }else if(path.isDigitsOnly()){
+                id = path
             }
             val link = "https://mbasic.facebook.com/$id"
             getLinkMediaFB(link) {

@@ -1,24 +1,26 @@
 package com.example.testdownload
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import androidx.appcompat.app.AppCompatCallback
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jsoup.Jsoup
-import kotlin.math.log
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+import java.io.UnsupportedEncodingException
 
 class MainActivity : AppCompatActivity() {
     private val headers = HashMap<String, String>()
-    private val path = "https://fb.watch/in7ycgmklz/"      //616238079579403
 
     //    private val path = "https://fb.watch/inaCbAMvLu/"       //735692064499679
-//    private val path = "https://fb.watch/in9a1R8l97/"   //507253684861738
+//        private val path = "https://fb.watch/in9a1R8l97/"   //507253684861738
 //    private val path = "https://www.facebook.com/gaming/Cxrrupt/videos/873294183705078/"
 //    private val path = "https://www.facebook.com/100042029148744/videos/5253219131402719/"
-//    private val path = "https://www.facebook.com/gaming/AnhMuc.1cr/videos/1583420772164054/"
+        private val path = "https://www.facebook.com/gaming/AnhMuc.1cr/videos/1583420772164054/"
+
+
     private val listID = ArrayList<String>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,25 +39,22 @@ class MainActivity : AppCompatActivity() {
 
         CoroutineScope(Dispatchers.IO).launch {
             val document = Jsoup.connect(path)
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 Edg/109.0.1518.70")
+                .userAgent("Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36")
                 .headers(headers)
                 .get()
+            var id = ""
+            val pattern = "[0-9]{14,}".toRegex()
             if (path.startsWith("https://fb.watch/")) {
-                val pattern = "[0-9]{14,}".toRegex()
                 val element = pattern.findAll(document.toString())
-                val id = element.firstOrNull { it.value.length == 15 }?.value
-                val link = "https://mbasic.facebook.com/$id"
-                Log.d("zzzzz", "onCreate: $id ")
-                getLinkMediaFB(link){
-                    Log.d("zzzzz", "onCreate: $it")
-                }
-            } else if (path.startsWith("https://www.facebook.com/")) {
-                val link = path.replace("www", "mbasic")
-                getLinkMediaFB(link){
-                    Log.d("zzzzz", "onCreate: $it")
-                }
-            }
+                id = element.firstOrNull { it.value.length == 15 }?.value ?:""
 
+            } else if (path.startsWith("https://www.facebook.com/")) {
+                id = pattern.findAll(path).last().value
+            }
+            val link = "https://mbasic.facebook.com/$id"
+            getLinkMediaFB(link) {
+                Log.d("zzzzz", "onCreate: $it")
+            }
         }
 
 
@@ -68,9 +67,16 @@ class MainActivity : AppCompatActivity() {
                 .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 Edg/109.0.1518.70")
                 .headers(headers)
                 .get()
-            Log.d("zzzzz", "getLinkMediaFB: $document")
-            val element = document.getElementsByClass("widePic").select(">a").first()
-            callBack.invoke(element.toString())
+            val pattern = "video_redirect[/?a-zA-Z0-9%=&._;-]{0,}\"".toRegex()
+            var element = pattern.find(document.toString())
+            var link = element?.value?.replace("video_redirect/?src=", "")
+            try {
+                val linkVideo =
+                    URLDecoder.decode(link?.replace("\"", "") ?: "", StandardCharsets.UTF_8.name())
+                callBack.invoke(linkVideo)
+            } catch (ignored: UnsupportedEncodingException) {
+                callBack.invoke("")
+            }
         }
     }
 }
